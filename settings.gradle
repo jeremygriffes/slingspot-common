@@ -1,0 +1,7 @@
+include('common',
+        'log',
+        'server',
+        'server-javalin',
+        'server-app-cmd-line',
+        'app-sample'
+)

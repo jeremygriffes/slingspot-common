@@ -1,0 +1,11 @@
+plugins {
+    id 'net.slingspot.kotlin-library-conventions'
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':log')
+    implementation project(':server')
+
+    implementation 'com.github.ajalt.clikt:clikt:3.0.0'
+}

@@ -1,0 +1,29 @@
+plugins {
+    id 'net.slingspot.kotlin-application-conventions'
+}
+
+ext {
+    app = 'net.slingspot.website.sample.AppKt'
+}
+
+dependencies {
+    implementation project(':log')
+    implementation project(':server-javalin')
+    implementation project(':server-app-cmd-line')
+}
+
+application {
+    mainClassName = app
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': app
+    }
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+build {
+    dependsOn 'fatJar'
+}

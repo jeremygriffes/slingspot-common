@@ -1,0 +1,5 @@
+plugins {
+    id 'net.slingspot.kotlin-library-conventions'
+}
+
+// This common module should be dull to the point of having no dependencies. Consider carefully before adding one.
