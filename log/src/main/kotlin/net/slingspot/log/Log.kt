@@ -1,15 +1,21 @@
 package net.slingspot.log
 
+import net.slingspot.log.Log.loggers
 import net.slingspot.log.Logger.Level
 import net.slingspot.log.Logger.Level.*
 
+/**
+ * Container for all installed Loggers. Logging to this Log object will distribute the log message to each logger.
+ *
+ * Loggers are initialized here via the [loggers] list, which must be initialized before performing logging.
+ */
 public object Log : Logger {
-    /**
-     * Application must initialize the loggers before performing any logging.
-     */
     @Suppress("MemberVisibilityCanBePrivate")
     public lateinit var loggers: List<Logger>
 
+    /**
+     * logLevel is unused for this top-level object.
+     */
     override val logLevel: Level = VERBOSE
 
     override fun v(tag: String, message: Message) {

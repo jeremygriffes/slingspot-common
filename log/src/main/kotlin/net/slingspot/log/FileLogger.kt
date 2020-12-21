@@ -12,20 +12,23 @@ import java.time.temporal.ChronoUnit.DAYS
 /**
  * Writes logs to files.
  *
- * Creates directories like this:
+ * Creates directories as follows:
  *
- * logs/2021-01-09/
- * logs/2021-01-10/
- * logs/2021-01-11/
+ * - logs/2021-01-09/
+ * - logs/2021-01-10/
+ * - logs/2021-01-11/
  *
- * Within each directory, creates files like these:
+ * Creates files like these within each directory:
  *
- * 000001.log
- * 000002.log
- * 000003.log
- * ...
+ * - 000001.log
+ * - 000002.log
+ * - 000003.log
  *
- * When the current log file exceeds [maxFileSizeBytes], or if the server is restarted, a new log file will be created.
+ * New log files will be created under any of these conditions:
+ *
+ * - the current log file exceeds [maxFileSizeBytes]
+ * - the server is restarted
+ * - Midnight UTC (begins logging in a new directory)
  *
  * Only the most recent log directories will be kept, up to [maxLogDays].
  */
@@ -120,6 +123,5 @@ public class FileLogger(override val logLevel: Level, private val logDirectory: 
         private const val logExtension = ".log"
         private const val maxFileSizeBytes = 1024 * 1024
         private const val maxLogDays = 2
-        private const val fileLog = "file"
     }
 }

@@ -2,6 +2,10 @@ package net.slingspot.log
 
 internal typealias Message = () -> Any?
 
+/**
+ * General logging interface. Instances of Logger will be held statically by Log.kt; avoid holding resources in your
+ * implementation.
+ */
 public interface Logger {
     public val logLevel: Level
 
