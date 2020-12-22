@@ -1,14 +1,9 @@
 package net.slingspot.server.javalin
 
-import gg.jte.ContentType
-import gg.jte.TemplateEngine
-import gg.jte.resolve.DirectoryCodeResolver
 import io.javalin.Javalin
-import io.javalin.plugin.rendering.template.JavalinJte
 import net.slingspot.lang.arrayOfNotNull
 import net.slingspot.log.Log
 import net.slingspot.server.Config
-import net.slingspot.server.Environment.Development
 import net.slingspot.server.HttpServer
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.util.ssl.SslContextFactory
@@ -47,21 +42,12 @@ public abstract class ServerImpl : HttpServer {
      *
      * Since singleton accessors are used within, this method is open to allow test mocking.
      */
-    internal open fun create(config: Config) = Javalin.create {
-        it.enforceSsl = true
+    internal open fun create(config: Config) = Javalin.create { javalin ->
+        javalin.enforceSsl = true
 
-        config.content?.run {
-            JavalinJte.configure(
-                if (config.environment == Development) {
-                    TemplateEngine.create(DirectoryCodeResolver(developmentPath), ContentType.Html)
-                } else {
-                    TemplateEngine.createPrecompiled(productionPath, ContentType.Html)
-                }
-            )
-            it.addStaticFiles(contentPath.toString())
-        }
+        config.webContentClasspath?.let { javalin.addStaticFiles(it) }
 
-        it.server {
+        javalin.server {
             Server().apply {
                 connectors = arrayOfNotNull(
                     httpPort?.let {

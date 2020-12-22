@@ -10,7 +10,7 @@ class ErrorNotFound {
             override val statusCode = 404
 
             override fun process(request: Request, response: Response) {
-                response.render("root/notFound.jte")
+                response.render("public/notFound.html")
             }
         }
     }

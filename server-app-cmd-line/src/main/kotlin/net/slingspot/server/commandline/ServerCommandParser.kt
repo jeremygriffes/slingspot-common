@@ -11,20 +11,16 @@ import net.slingspot.log.Log
 import net.slingspot.log.Logger
 import net.slingspot.net.validPortFrom
 import net.slingspot.server.Config
-import net.slingspot.server.Content
 import net.slingspot.server.Environment
 
 /**
  * Parses the command line arguments and starts the server. Initializes console and file logging.
  */
-public fun parse(vararg args: String, content: Content?, start: (Int, Int, Config) -> Unit) {
-    ServerCommandParser(content, start).main(args)
-}
-
-internal class ServerCommandParser(
-    private val content: Content?,
-    private val start: (Int, Int, Config) -> Unit
-) : CliktCommand() {
+public fun parse(
+    vararg args: String,
+    content: String?,
+    start: (Int, Int, Config) -> Unit
+): Unit = object : CliktCommand() {
     private val keystorePath by option(
         "-f",
         "--file",
@@ -75,7 +71,12 @@ internal class ServerCommandParser(
         help = "File log level: ${Logger.Level.VERBOSE}, ${Logger.Level.DEBUG}, ${Logger.Level.INFO}, ${Logger.Level.WARN}, ${Logger.Level.ERROR}"
     )
 
-    private val logDirectory by option("-o", "--out", envvar = "FILE_LOG_DIR", help = "output directory for log files")
+    private val logDirectory by option(
+        "-o",
+        "--out",
+        envvar = "FILE_LOG_DIR",
+        help = "output directory for log files"
+    )
 
     private fun logLevelFrom(value: String?) = when (value) {
         "DEBUG", "debug" -> Logger.Level.DEBUG
@@ -111,4 +112,4 @@ internal class ServerCommandParser(
             )
         )
     }
-}
+}.main(args)
