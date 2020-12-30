@@ -12,6 +12,7 @@ import net.slingspot.log.Logger
 import net.slingspot.net.validPortFrom
 import net.slingspot.server.Config
 import net.slingspot.server.Environment
+import net.slingspot.server.RoleProvider
 
 /**
  * Parses the command line arguments and starts the server. Initializes console and file logging.
@@ -19,6 +20,7 @@ import net.slingspot.server.Environment
 public fun parse(
     vararg args: String,
     content: String?,
+    roleProvider: RoleProvider,
     start: (Int, Int, Config) -> Unit
 ): Unit = object : CliktCommand() {
     private val keystorePath by option(
@@ -108,7 +110,8 @@ public fun parse(
                 keystorePath,
                 keystoreType,
                 keystorePassword,
-                content
+                content,
+                roleProvider
             )
         )
     }

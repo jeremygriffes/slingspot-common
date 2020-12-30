@@ -3,6 +3,7 @@ package net.slingspot.server
 public interface Endpoint {
     public val method: Method
     public val path: String
+    public val access: List<UserRole>
 
     /**
      * This is not an exhaustive list of methods. Add new ones as needed.

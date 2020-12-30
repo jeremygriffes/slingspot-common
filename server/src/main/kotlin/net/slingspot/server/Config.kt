@@ -5,5 +5,6 @@ public data class Config(
     val keystorePath: String,
     val keystoreType: String,
     val keystorePassword: String,
-    val webContentClasspath: String?
+    val webContentClasspath: String?,
+    val roleProvider: RoleProvider,
 )

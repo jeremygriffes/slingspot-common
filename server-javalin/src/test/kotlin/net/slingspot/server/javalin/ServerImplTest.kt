@@ -33,6 +33,7 @@ class ServerImplTest {
             object : Endpoint {
                 override val method = Endpoint.Method.Get
                 override val path = "test"
+                override val access = listOf<UserRole>()
                 override fun process(request: Request, response: Response) {
                     TODO("Not yet implemented")
                 }
@@ -41,7 +42,14 @@ class ServerImplTest {
     )
 
     private fun getSimpleConfig() = Config(
-        Environment.Development, "path", "PKCS12", "password", null
+        Environment.Development, "path", "PKCS12", "password", null,
+        object : RoleProvider {
+            override val allRoles = setOf<UserRole>()
+
+            override fun isAuthorized(request: Request, endpointRoles: Set<UserRole>): Boolean {
+                return true
+            }
+        }
     )
 
     @Test
