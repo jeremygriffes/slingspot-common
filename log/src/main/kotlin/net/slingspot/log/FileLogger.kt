@@ -1,13 +1,17 @@
 package net.slingspot.log
 
+import net.slingspot.io.DefaultFileSystem
+import net.slingspot.io.FileSystem
+import net.slingspot.io.TextFileRef
 import net.slingspot.log.FileLogger.Companion.maxFileSizeBytes
 import net.slingspot.log.FileLogger.Companion.maxLogDays
 import net.slingspot.log.Logger.Level
 import net.slingspot.log.Logger.Level.*
-import java.io.File
+import net.slingspot.time.midnightNextDay
+import net.slingspot.time.now
+import net.slingspot.time.simpleDateFormat
+import net.slingspot.time.toMillis
 import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit.DAYS
 
 /**
  * Writes logs to files.
@@ -32,96 +36,94 @@ import java.time.temporal.ChronoUnit.DAYS
  *
  * Only the most recent log directories will be kept, up to [maxLogDays].
  */
-public class FileLogger(override val logLevel: Level, private val logDirectory: String = "logs") : Logger {
-    private var targetFile: File? = null
+public class FileLogger(
+    override val logLevel: Level,
+    private val logs: String = "logs",
+    private val fileSystem: FileSystem = DefaultFileSystem()
+) : Logger {
+    private var targetFile: TextFileRef? = null
     private var tomorrow: Long = 0L
 
     override fun v(tag: String, message: Message) {
-        write(VERBOSE, tag, message)
+        write(now(), VERBOSE, tag, message)
     }
 
     override fun d(tag: String, message: Message) {
-        write(DEBUG, tag, message)
+        write(now(), DEBUG, tag, message)
     }
 
     override fun i(tag: String, message: Message) {
-        write(INFO, tag, message)
+        write(now(), INFO, tag, message)
     }
 
     override fun w(tag: String, throwable: Throwable?, message: Message) {
-        write(WARN, tag, message, throwable)
+        write(now(), WARN, tag, message, throwable)
     }
 
     override fun e(tag: String, throwable: Throwable?, message: Message) {
-        write(ERROR, tag, message, throwable)
+        write(now(), ERROR, tag, message, throwable)
     }
 
-    private fun write(level: Level, tag: String, message: Message, throwable: Throwable? = null) {
-        if (System.currentTimeMillis() >= tomorrow) {
+    internal fun write(time: LocalDateTime, level: Level, tag: String, message: Message, throwable: Throwable? = null) {
+        if (time.toMillis() >= tomorrow) {
             // Force a new log directory when the day rolls over at midnight.
             targetFile = null
         }
 
-        targetFile = nextLogFile()
+        targetFile = nextLogFile(time)
 
         targetFile?.let {
-            it.appendText(LogCommon.format(level, tag, message, throwable))
+            it.append(LogCommon.format(level, tag, message, throwable))
             if (it.length() > maxFileSizeBytes) {
                 targetFile = null
             }
         }
     }
 
-    /**
-     * Produces a string like "2021-01-31"
-     */
-    private fun LocalDateTime.simpleDateFormat() =
-        "$year-${month.value.toString().padStart(2, '0')}-${dayOfMonth.toString().padStart(2, '0')}"
-
-    private fun nextLogFile(): File? {
+    internal fun nextLogFile(time: LocalDateTime): TextFileRef? {
         return targetFile ?: try {
             // Create new logs/[date] directory if needed.
-            val now = LocalDateTime.now()
-            val path = logDirectory + File.separator + now.simpleDateFormat()
+            val path = logs + fileSystem.separator + time.simpleDateFormat()
 
-            val directory = File(path)
-            try {
-                directory.mkdirs()
-            } catch (e: Exception) {
-                println("Failed to create logging directory")
-                return null
-            }
+            val directory = fileSystem.directoryAt(path)
+            directory.create()
 
-            tomorrow = now.plusDays(1).truncatedTo(DAYS).toInstant(ZoneOffset.UTC).toEpochMilli()
+            tomorrow = time.midnightNextDay()
 
             // Purge any old logs.
-            File(logDirectory).listFiles()?.sorted()?.let { logDirectoryContents ->
-                if (logDirectoryContents.size > maxLogDays) {
-                    logDirectoryContents.dropLast(maxLogDays).forEach { directory ->
-                        try {
-                            directory.listFiles()?.forEach { file ->
-                                file.delete()
-                            }
-                            directory.delete()
-                        } catch (e: Exception) {
-                            // Ignore failure to remove directory and/or file. Move on to the next one.
-                        }
+            val logDirectoryContents = fileSystem.directoryAt(logs).contents()
+            if (logDirectoryContents.size > maxLogDays) {
+                logDirectoryContents.dropLast(maxLogDays).forEach { fileRef ->
+                    try {
+                        fileRef.asDirectory()?.contents()?.forEach { it.delete() }
+                        fileRef.delete()
+                    } catch (e: Exception) {
+                        // Ignore failure to remove directory and/or file. Move on to the next one.
                     }
                 }
             }
 
             // Create new log file.
-            directory.listFiles()?.maxOrNull()
-                .let { (it?.nameWithoutExtension ?: "0").toInt() + 1 }.toString().padStart(6, '0')
-                .let { File(path + File.separator + it + logExtension) }
+            directory.contents().maxOrNull()
+                .let { numericNameOf(it?.path) + 1 }.toString().padStart(6, '0')
+                .let { fileSystem.textFileAt(path + fileSystem.separator + it + logExtension) }
         } catch (e: Exception) {
+            println("Failed to generate log file due to $e")
             null
         }
     }
 
-    private companion object {
-        private const val logExtension = ".log"
-        private const val maxFileSizeBytes = 1024 * 1024
-        private const val maxLogDays = 2
+    private fun numericNameOf(path: String?): Int {
+        return try {
+            path?.substringAfterLast(fileSystem.separator)?.removeSuffix(logExtension)?.toInt() ?: 0
+        } catch (e: NumberFormatException) {
+            0
+        }
+    }
+
+    internal companion object {
+        internal const val logExtension = ".log"
+        internal const val maxFileSizeBytes = 1024 * 1024
+        internal const val maxLogDays = 2
     }
 }
