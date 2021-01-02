@@ -7,16 +7,16 @@ import io.mockk.mockk
 import net.slingspot.log.ConsoleLogger
 import net.slingspot.log.Log
 import net.slingspot.log.Logger
-import net.slingspot.server.*
-import net.slingspot.server.auth.Authorization
+import net.slingspot.server.Config
+import net.slingspot.server.Endpoint
+import net.slingspot.server.Request
+import net.slingspot.server.Response
 import net.slingspot.server.auth.UserRole
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import java.io.File
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
 
 class ServerImplTest {
     private val mockJavalin = mockk<Javalin>(relaxed = true)
@@ -49,43 +49,33 @@ class ServerImplTest {
         ), errors = listOf()
     )
 
-    private fun getSimpleConfig() = Config(
-        Environment.Development, "path", "PKCS12", "password", null,
-        object : Authorization {
-            override val allRoles = setOf<UserRole>()
-            override val publicKey: RSAPublicKey = mockk(relaxed = true)
-            override val privateKey: RSAPrivateKey? = null
-        }
-    )
+    private fun ServerImpl.startMock() = start(mockk())
 
     @Test
     fun `start server throws when already running`() {
         val server = getSimpleServer()
-        val config = getSimpleConfig()
 
-        server.start(config)
+        server.startMock()
 
-        assertThrows<IllegalStateException> { server.start(config) }
+        assertThrows<IllegalStateException> { server.startMock() }
     }
 
     @Test
     fun `server can restart after stopping`() {
         val server = getSimpleServer()
-        val config = getSimpleConfig()
 
-        server.start(config)
+        server.startMock()
 
         server.stop()
 
-        assertDoesNotThrow { server.start(config) }
+        assertDoesNotThrow { server.startMock() }
     }
 
     @Test
     fun `server stop is idempotent`() {
         val server = getSimpleServer()
-        val config = getSimpleConfig()
 
-        server.start(config)
+        server.startMock()
 
         server.stop()
 

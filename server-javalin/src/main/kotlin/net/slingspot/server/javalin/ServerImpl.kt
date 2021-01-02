@@ -3,6 +3,7 @@ package net.slingspot.server.javalin
 import io.javalin.Javalin
 import net.slingspot.lang.arrayOfNotNull
 import net.slingspot.log.Log
+import net.slingspot.server.CertKeystore
 import net.slingspot.server.Config
 import net.slingspot.server.HttpServer
 import org.eclipse.jetty.server.*
@@ -21,15 +22,11 @@ public abstract class ServerImpl : HttpServer {
         addCustomizer(ForwardedRequestCustomizer())
     })
 
-    private fun sslContextFactory(
-        keystorePath: String,
-        keystoreType: String,
-        keystorePassword: String
-    ) = SslContextFactory.Server().apply {
-        keyStoreType = keystoreType
-        keyStorePath = keystorePath
-        setKeyStorePassword(keystorePassword)
-        setKeyManagerPassword(keystorePassword)
+    private fun sslContextFactory(certKeystore: CertKeystore) = SslContextFactory.Server().apply {
+        keyStoreType = certKeystore.type
+        keyStorePath = certKeystore.path
+        setKeyStorePassword(certKeystore.password)
+        setKeyManagerPassword(certKeystore.password)
         setExcludeCipherSuites(
             *excludeCipherSuites,
             *HttpServer.excludedCipherSuites
@@ -64,11 +61,8 @@ public abstract class ServerImpl : HttpServer {
                         ServerConnector(this, connectionFactory).apply { port = it }
                     },
                     httpsPort?.let {
-                        ServerConnector(
-                            this,
-                            sslContextFactory(config.keystorePath, config.keystoreType, config.keystorePassword),
-                            connectionFactory
-                        ).apply { port = it }
+                        val sslContext = sslContextFactory(config.certKeystore)
+                        ServerConnector(this, sslContext, connectionFactory).apply { port = it }
                     }
                 )
             }

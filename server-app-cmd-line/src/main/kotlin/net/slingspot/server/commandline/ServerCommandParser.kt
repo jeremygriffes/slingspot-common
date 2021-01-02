@@ -7,25 +7,17 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import net.slingspot.log.ConsoleLogger
 import net.slingspot.log.FileLogger
-import net.slingspot.log.Log
 import net.slingspot.log.Logger
 import net.slingspot.net.validPortFrom
-import net.slingspot.server.Config
+import net.slingspot.server.CertKeystore
 import net.slingspot.server.Environment
-import net.slingspot.server.auth.Authorization
-import net.slingspot.server.auth.UserRole
-import java.io.File
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
 
 /**
- * Parses the command line arguments and starts the server. Initializes console and file logging.
+ * Parses and reports the command line arguments.
  */
 public fun parse(
     vararg args: String,
-    publicResourceDirectory: String?,
-    userRoles: Set<UserRole>,
-    start: (Int, Int, Config) -> Unit
+    parsed: (Arguments) -> Unit
 ): Unit = object : CliktCommand() {
     private val keystorePath by option(
         "-f",
@@ -111,27 +103,19 @@ public fun parse(
             FileLogger(logLevelFrom(fileLogLevel), it)
         }
 
-        Log.loggers = listOfNotNull(consoleLogger, fileLogger)
-
         validPortFrom(http) ?: throw IllegalArgumentException("Invalid HTTP port")
         validPortFrom(https) ?: throw IllegalArgumentException("Invalid HTTPS port")
 
-        val authorization = object : Authorization {
-            override val allRoles: Set<UserRole> = userRoles
-            override val publicKey: RSAPublicKey = keyFrom(File(authPublicKeyPath).readBytes())
-            override val privateKey: RSAPrivateKey? = authPrivateKeyPath?.let { keyFrom(File(it).readBytes()) }
-        }
-
-        start(
-            http,
-            https,
-            Config(
+        parsed(
+            Arguments(
+                http,
+                https,
                 Environment.from(environment),
-                keystorePath,
-                keystoreType,
-                keystorePassword,
-                publicResourceDirectory,
-                authorization
+                CertKeystore(keystorePath, keystoreType, keystorePassword),
+                keyFrom(authPublicKeyPath),
+                authPrivateKeyPath?.let { keyFrom(it) },
+                consoleLogger,
+                fileLogger
             )
         )
     }

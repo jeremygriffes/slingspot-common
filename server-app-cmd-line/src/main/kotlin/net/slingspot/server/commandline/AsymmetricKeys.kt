@@ -1,5 +1,6 @@
 package net.slingspot.server.commandline
 
+import java.io.File
 import java.security.Key
 import java.security.KeyFactory
 import java.security.PrivateKey
@@ -31,5 +32,12 @@ public inline fun <reified T : Key> keyFrom(bytes: ByteArray): T =
             }
         }
     } as T
+
+/**
+ * Convenience method to read a key from a file at [filePath].
+ *
+ * @see keyFrom
+ */
+public inline fun <reified T : Key> keyFrom(filePath: String): T = keyFrom(File(filePath).readBytes())
 
 public class UnsupportedKeyException(message: String) : RuntimeException(message)

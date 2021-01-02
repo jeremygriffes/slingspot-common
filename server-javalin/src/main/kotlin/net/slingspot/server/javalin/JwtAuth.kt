@@ -4,14 +4,14 @@ import io.javalin.core.security.Role
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import net.slingspot.log.Log
-import net.slingspot.server.auth.UserRole.Companion.EVERYONE
+import net.slingspot.server.auth.UserRole.Companion.PUBLIC
 import net.slingspot.server.javalin.auth.JavalinRole
-import java.security.interfaces.RSAPublicKey
+import java.security.PublicKey
 
 internal object JwtAuth {
 
-    fun isAuthorized(key: RSAPublicKey, bearer: String?, permittedRoles: Set<Role>): Boolean {
-        if (permittedRoles == EVERYONE) return true
+    fun isAuthorized(key: PublicKey, bearer: String?, permittedRoles: Set<Role>): Boolean {
+        if (permittedRoles == PUBLIC) return true
 
         val token = bearer?.removePrefix(HEADER_VAL_BEARER)?.trim() ?: return false
 

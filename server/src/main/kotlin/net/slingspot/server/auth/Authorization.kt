@@ -1,18 +1,15 @@
 package net.slingspot.server.auth
 
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
+import java.security.PrivateKey
+import java.security.PublicKey
 
 public interface Authorization {
     public val allRoles: Set<UserRole>
-    public val publicKey: RSAPublicKey
-    public val privateKey: RSAPrivateKey?
-}
+    public val publicKey: PublicKey
+    public val privateKey: PrivateKey?
 
-public interface UserRole {
-    public val title: String
-
-    public companion object {
-        public val EVERYONE: List<UserRole> = listOf()
+    public fun isAuthorized(token: String, roles: Set<UserRole>): Boolean {
+        return true
     }
 }
+
