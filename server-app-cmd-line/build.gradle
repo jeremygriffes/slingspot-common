@@ -7,5 +7,6 @@ dependencies {
     implementation project(':log')
     implementation project(':server')
 
+    implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'com.github.ajalt.clikt:clikt:3.0.0'
 }

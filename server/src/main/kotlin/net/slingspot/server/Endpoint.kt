@@ -1,5 +1,7 @@
 package net.slingspot.server
 
+import net.slingspot.server.auth.UserRole
+
 public interface Endpoint {
     public val method: Method
     public val path: String

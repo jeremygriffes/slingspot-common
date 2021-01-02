@@ -12,15 +12,19 @@ import net.slingspot.log.Logger
 import net.slingspot.net.validPortFrom
 import net.slingspot.server.Config
 import net.slingspot.server.Environment
-import net.slingspot.server.RoleProvider
+import net.slingspot.server.auth.Authorization
+import net.slingspot.server.auth.UserRole
+import java.io.File
+import java.security.interfaces.RSAPrivateKey
+import java.security.interfaces.RSAPublicKey
 
 /**
  * Parses the command line arguments and starts the server. Initializes console and file logging.
  */
 public fun parse(
     vararg args: String,
-    content: String?,
-    roleProvider: RoleProvider,
+    publicResourceDirectory: String?,
+    userRoles: Set<UserRole>,
     start: (Int, Int, Config) -> Unit
 ): Unit = object : CliktCommand() {
     private val keystorePath by option(
@@ -43,6 +47,16 @@ public fun parse(
         envvar = "KEYSTORE_PASSWORD",
         help = "keystore password"
     ).required()
+
+    private val authPublicKeyPath by option(
+        envvar = "AUTH_PUBLIC_KEY_PATH",
+        help = "path to public key to validate jwt authorization tokens"
+    ).required()
+
+    private val authPrivateKeyPath by option(
+        envvar = "AUTH_PRIVATE_KEY_PATH",
+        help = "path to private key to sign jwt authorization tokens"
+    )
 
     private val environment by option(
         "-e",
@@ -102,6 +116,12 @@ public fun parse(
         validPortFrom(http) ?: throw IllegalArgumentException("Invalid HTTP port")
         validPortFrom(https) ?: throw IllegalArgumentException("Invalid HTTPS port")
 
+        val authorization = object : Authorization {
+            override val allRoles: Set<UserRole> = userRoles
+            override val publicKey: RSAPublicKey = keyFrom(File(authPublicKeyPath).readBytes())
+            override val privateKey: RSAPrivateKey? = authPrivateKeyPath?.let { keyFrom(File(it).readBytes()) }
+        }
+
         start(
             http,
             https,
@@ -110,8 +130,8 @@ public fun parse(
                 keystorePath,
                 keystoreType,
                 keystorePassword,
-                content,
-                roleProvider
+                publicResourceDirectory,
+                authorization
             )
         )
     }

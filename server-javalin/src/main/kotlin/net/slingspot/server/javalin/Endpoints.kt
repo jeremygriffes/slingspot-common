@@ -6,6 +6,7 @@ import io.javalin.http.Handler
 import net.slingspot.server.Endpoint
 import net.slingspot.server.Request
 import net.slingspot.server.Response
+import net.slingspot.server.javalin.auth.toJavalinRoles
 
 internal fun Endpoint.toJavalin(javalin: Javalin) {
     when (method) {

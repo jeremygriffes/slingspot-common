@@ -1,7 +1,7 @@
-package net.slingspot.server.javalin
+package net.slingspot.server.javalin.auth
 
 import io.javalin.core.security.Role
-import net.slingspot.server.UserRole
+import net.slingspot.server.auth.UserRole
 
 /**
  * Internal Javalin-based Role that wraps the generic slingspot server UserRole.

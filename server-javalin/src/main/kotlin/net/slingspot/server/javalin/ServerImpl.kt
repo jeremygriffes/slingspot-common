@@ -1,14 +1,10 @@
 package net.slingspot.server.javalin
 
 import io.javalin.Javalin
-import io.javalin.core.security.Role
-import io.jsonwebtoken.JwtException
-import io.jsonwebtoken.Jwts
 import net.slingspot.lang.arrayOfNotNull
 import net.slingspot.log.Log
 import net.slingspot.server.Config
 import net.slingspot.server.HttpServer
-import net.slingspot.server.UserRole.Companion.EVERYONE
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.util.ssl.SslContextFactory
 
@@ -42,9 +38,6 @@ public abstract class ServerImpl : HttpServer {
 
     /**
      * Configures the Javalin server to listen for http and https, if the respective ports have been provided.
-     * If the configuration's content is non-null, the content directories are initialized.
-     *
-     * Since singleton accessors are used within, this method is open to allow test mocking.
      */
     internal open fun create(config: Config) = Javalin.create { javalin ->
         javalin.enforceSsl = true
@@ -52,7 +45,12 @@ public abstract class ServerImpl : HttpServer {
         config.webContentClasspath?.let { javalin.addStaticFiles(it) }
 
         javalin.accessManager { handler, ctx, permittedRoles ->
-            if (isAuthorized(ctx.header(HEADER_AUTHORIZATION), permittedRoles)) {
+            if (JwtAuth.isAuthorized(
+                    config.authorization.publicKey,
+                    ctx.header(HEADER_AUTHORIZATION),
+                    permittedRoles
+                )
+            ) {
                 handler.handle(ctx)
             } else {
                 ctx.status(401).result("Unauthorized")
@@ -104,36 +102,7 @@ public abstract class ServerImpl : HttpServer {
         instance = null
     }
 
-    internal fun isAuthorized(bearer: String?, permittedRoles: Set<Role>): Boolean {
-        if (permittedRoles == EVERYONE) return true
-
-        val token = bearer?.removePrefix(HEADER_VAL_BEARER)?.trim() ?: return false
-
-        try {
-            val claimedRoles = Jwts.parserBuilder()
-                .setAllowedClockSkewSeconds(CLOCK_SKEW_SECONDS)
-                .setSigningKey("TODO")
-                .build()
-                .parseClaimsJws(token)
-                .body?.get(CLAIM_ROLES, String::class.java)
-                ?.split(',')
-                ?: return false
-
-            val requiredEndpointRoles = permittedRoles.map { (it as JavalinRole).userRole.title }
-
-            // For now, *all* roles defined by the endpoint *must* be present in the user's claimed roles.
-            // This logic might be revisited, or perhaps role-based authorization may be replaced by attribute-based.
-            return claimedRoles.containsAll(requiredEndpointRoles)
-        } catch (e: JwtException) {
-            Log.i(tag) { "JWT rejected" }
-            return false
-        }
-    }
-
     internal companion object {
-        const val CLOCK_SKEW_SECONDS = 2L * 60
         const val HEADER_AUTHORIZATION = "Authorization"
-        const val HEADER_VAL_BEARER = "Bearer"
-        const val CLAIM_ROLES = "roles"
     }
 }
