@@ -6,6 +6,9 @@ import net.slingspot.log.Log
 import net.slingspot.server.CertKeystore
 import net.slingspot.server.Config
 import net.slingspot.server.HttpServer
+import net.slingspot.server.auth.Authorization.Companion.Headers.AUTHORIZATION
+import net.slingspot.server.auth.Authorization.Companion.bearer
+import net.slingspot.server.javalin.auth.toUserRoles
 import org.eclipse.jetty.server.*
 import org.eclipse.jetty.util.ssl.SslContextFactory
 
@@ -41,16 +44,13 @@ public abstract class ServerImpl : HttpServer {
 
         config.webContentClasspath?.let { javalin.addStaticFiles(it) }
 
-        javalin.accessManager { handler, ctx, permittedRoles ->
-            if (JwtAuth.isAuthorized(
-                    config.authorization.publicKey,
-                    ctx.header(HEADER_AUTHORIZATION),
-                    permittedRoles
-                )
-            ) {
-                handler.handle(ctx)
+        javalin.accessManager { handler, context, permittedRoles ->
+            val token = bearer(context.header(AUTHORIZATION))
+
+            if (config.authorization.isAuthorized(token, permittedRoles.toUserRoles())) {
+                handler.handle(context)
             } else {
-                ctx.status(401).result("Unauthorized")
+                context.status(401).result("Unauthorized")
             }
         }
 
@@ -94,9 +94,5 @@ public abstract class ServerImpl : HttpServer {
         }
         instance?.stop()
         instance = null
-    }
-
-    internal companion object {
-        const val HEADER_AUTHORIZATION = "Authorization"
     }
 }

@@ -17,7 +17,7 @@ import net.slingspot.server.Environment
  */
 public fun parse(
     vararg args: String,
-    parsed: (Arguments) -> Unit
+    parsed: Arguments.() -> Unit
 ): Unit = object : CliktCommand() {
     private val keystorePath by option(
         "-f",

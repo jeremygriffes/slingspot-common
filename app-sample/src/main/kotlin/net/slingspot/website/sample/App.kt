@@ -5,8 +5,7 @@ import net.slingspot.server.Config
 import net.slingspot.server.auth.Authorization
 import net.slingspot.server.auth.UserRole
 import net.slingspot.server.commandline.parse
-import java.security.PrivateKey
-import java.security.PublicKey
+import net.slingspot.server.javalin.auth.jwt
 
 private const val publicResourceDirectory = "public"
 
@@ -22,20 +21,15 @@ private val userRoles = setOf(
     },
 )
 
-fun main(vararg args: String) {
-    parse(*args) {
-        with(it) {
-            loggers = listOfNotNull(consoleLogger, fileLogger)
+fun main(vararg args: String) = parse(*args) {
+    loggers = listOfNotNull(consoleLogger, fileLogger)
 
-            AppServer(httpPort, httpsPort).start(
-                Config(environment, certKeystore, publicResourceDirectory, authorization(publicKey, privateKey))
-            )
-        }
-    }
-}
-
-private fun authorization(public: PublicKey, private: PrivateKey?) = object : Authorization {
-    override val allRoles: Set<UserRole> = userRoles
-    override val publicKey: PublicKey = public
-    override val privateKey: PrivateKey? = private
+    AppServer(httpPort, httpsPort).start(
+        Config(
+            environment,
+            certKeystore,
+            publicResourceDirectory,
+            Authorization.jwt(publicKey, privateKey, userRoles)
+        )
+    )
 }
