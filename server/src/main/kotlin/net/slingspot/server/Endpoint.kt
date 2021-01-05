@@ -5,7 +5,7 @@ import net.slingspot.server.auth.UserRole
 public interface Endpoint {
     public val method: Method
     public val path: String
-    public val access: List<UserRole>
+    public val access: Collection<UserRole>
 
     /**
      * This is not an exhaustive list of methods. Add new ones as needed.

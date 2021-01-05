@@ -8,6 +8,6 @@ import net.slingspot.server.auth.UserRole
  */
 internal data class JavalinRole(val userRole: UserRole) : Role
 
-internal fun List<UserRole>.toJavalinRoles() = map { JavalinRole(it) }.toSet()
+internal fun Collection<UserRole>.toJavalinRoles() = map { JavalinRole(it) }.toSet()
 
-internal fun Set<Role>.toUserRoles() = map { (it as JavalinRole).userRole }.toSet()
+internal fun Collection<Role>.toUserRoles() = map { (it as JavalinRole).userRole }.toSet()
